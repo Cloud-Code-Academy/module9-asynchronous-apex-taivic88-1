@@ -17,7 +17,7 @@
  * 
  * Note: The class below contains placeholders for implementing a queueable job to update accounts and opportunities.
  */
-public with sharing class NextStepQueueable {
+public with sharing class NextStepQueueable implements Queueable{
 
     // Member variable to store the accounts
     private Map<Id,Account> accounts;
@@ -25,34 +25,59 @@ public with sharing class NextStepQueueable {
     // Constructor to accept the accounts
     public NextStepQueueable(Map<Id,Account> accounts) {
         // Store the accounts in a member variable
+        this.accounts = accounts;
     }
 
     // Method to queue the job
     public static void enqueueJob() {
         // Get 10 accounts with Next Step populated
+        List<Account> nextStepAccts = [
+            SELECT Id
+            FROM Account
+            WHERE Next_Step__c != null
+            LIMIT 10
+        ];
 
         // If there are any accounts, queue the job using System.enqueueJob
+        if (!nextStepAccts.isEmpty()) {
+            Map<Id, Account> accountMap = new Map<Id, Account>(nextStepAccts);
+            System.enqueueJob(new NextStepQueueable(accountMap));
+        }
     }
 
     /*
      * Update/Uncomment the template code to create a method
      * Method to execute the queueable job
      */
-    //[public | private ] [static] data_type execute (input parameters) {
-        // Get the accounts from the member variable
+    public void execute(QueueableContext context) {
 
-            // Remove the Next Step using the helper method
+        // Get the accounts from the member variable
+        List<Account> accountList = this.accounts.values();
+        for (Account acc : accountList) {
+            removeNextStep(acc);
+        }
 
         // Update the accounts
+        update accountList;
 
         // Get the opportunities related to the accounts
+        List<Opportunity> relatedOpps = [
+            SELECT Id, AccountId
+            FROM Opportunity
+            WHERE AccountId IN : this.accounts.keySet()
+        ];
 
+        for (Opportunity opp : relatedOpps) {
             // Remove the Next Step using the helper method
-
+            removeNextStep(opp);
+        }
+            
         // Update the opportunities
+        update relatedOpps;
 
         // Call the enqueueJob method to queue another job to process more records.
-    //}
+        enqueueJob();
+    }
 
     // Helper method to remove the Next Step
     // Overloaded method to accept an opportunity
