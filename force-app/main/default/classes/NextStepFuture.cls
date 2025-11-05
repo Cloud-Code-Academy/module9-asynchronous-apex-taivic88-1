@@ -27,9 +27,20 @@ public with sharing class NextStepFuture {
      * Opportunity Next Step field is a standard field
      * Update the corresponding test class AsynchronousTest and test method nextStepFuture_testUpdateAllNextStep to cover test this method
      */
-    //[public | private ] [static] data_type method_name (input parameters) {
-    //  The body of the method
-    //}
+    @future
+    public static void updateNextStep () {
+        List <Account> accs = [SELECT Id, Description FROM Account];
+        for(Account acc : accs) {
+            acc.Next_Step__c = 'Meeting in the future';
+        }
+        update accs;
+
+        List <Opportunity> opps = [SELECT Id, Description FROM Opportunity];
+        for(Opportunity opp : opps) {
+            opp.NextStep = 'Meeting in the future';
+        }
+        update opps;
+    }
 
     /*
     * Question 2
@@ -42,10 +53,15 @@ public with sharing class NextStepFuture {
         Opportunity bigDeal = new Opportunity();
         insertBigDeal(bigDeal);
 
+        updateRole();
+    }
+
+    @future
+    private static void updateRole() {
         UserRole[] roles = [SELECT Id, Name FROM UserRole WHERE Id = :UserInfo.getUserRoleId() OR Name = 'CRO' LIMIT 1];
         updateUserRoleName(roles);
     }
-
+    
     // Helper method to insert big deal
     private static void insertBigDeal(Opportunity opp) {
         opp.Amount = 1000000;
